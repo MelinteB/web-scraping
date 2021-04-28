@@ -9,21 +9,12 @@ https://docs.djangoproject.com/en/3.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
-
-
-from pathlib import Path
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-
 import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_DIR = Path('C:\\Python_Backend\\web-scraping-engine\\fetch_items_url\\mydb.db').resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
@@ -35,31 +26,25 @@ SECRET_KEY = '@z##b3ku_n6lwig+hf*u(h^@tzw=+dm3x=86absbc%4)f37o&o'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['127.0.0.1']
 
-
-
-# Application definition
-
-INSTALLED_APPS = [
-    'accounts.apps.AccountsConfig',
-]
 # Application definition
 
 INSTALLED_APPS = [
 
     'web_page.apps.WebPageConfig',
+    'tweets',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'django.contrib.sites',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+
     # ... include the providers you want to enable:
     'allauth.socialaccount.providers.amazon',
     'allauth.socialaccount.providers.facebook',
@@ -73,10 +58,10 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.slack',
     'allauth.socialaccount.providers.spotify',
     'allauth.socialaccount.providers.yahoo',
+    'social_django',
 
 ]
 SITE_ID = 1
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -107,18 +92,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'scraping.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
+#         # 'NAME': BASE_DIR / 'mydb.db',
+#         'NAME':os.path.join(BASE_DIR,'db.sqlite3')
 #     }
 # }
-#
-
 # DATABSES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.mysql',
@@ -137,18 +120,37 @@ DATABASES = {
         'PORT': '3306',
     }
 }
-# Password validation
-# https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
+
+# DATABASES = {
+#
+#     'default': {
+#
+#         'ENGINE': 'django.db.backends.postgresql',
+#
+#         'NAME': 'd44osl2009u94f',
+#
+#         'USER': 'jgbczeipuvchtj',
+#
+#         'PASSWORD': '7cd2913a88627b04c5e707886ebc355dc871d9c84b0d56d902964d7c955b0ef7',
+#
+#         'HOST': 'ec2-54-228-174-49.eu-west-1.compute.amazonaws.com',
+#
+#         'PORT': 5432,
+#
+#     }
+#
+# }
+
 
 AUTHENTICATION_BACKENDS = [
-
+# `allauth` specific authentication methods, such as login by e-mail
+#     'allauth.account.auth_backends.AuthenticationBackend',
+    'social_core.backends.facebook.FacebookOAuth2',
     # Needed to login by username in Django admin, regardless of `allauth`
     'django.contrib.auth.backends.ModelBackend',
 
-    # `allauth` specific authentication methods, such as login by e-mail
-    'allauth.account.auth_backends.AuthenticationBackend',
-]
 
+]
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -165,9 +167,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
 
@@ -181,14 +180,21 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+STATICFILES_DIRS=[
+    os.path.join(BASE_DIR,"static")
+]
 
+LOGIN_REDIRECT_URL='/items/list'
 
-LOGIN_REDIRECT_URL='/page/list'
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+SOCIAL_AUTH_FACEBOOK_KEY = os.environ.get('SOCIAL_AUTH_FACEBOOK_KEY')        # App ID
+SOCIAL_AUTH_FACEBOOK_SECRET = os.environ.get('SOCIAL_AUTH_FACEBOOK_SECRET ') # App Secret
 
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+APPEND_SLASH=False
