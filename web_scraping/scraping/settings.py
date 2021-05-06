@@ -27,13 +27,16 @@ SECRET_KEY = '@z##b3ku_n6lwig+hf*u(h^@tzw=+dm3x=86absbc%4)f37o&o'
 DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1']
-
+MAX_TWEET_LENGTH = 240
+TWEET_ACTION_OPTIONS=["like", "unlike", "retweet"]
 # Application definition
 
 INSTALLED_APPS = [
-
+    #  internal
     'web_page.apps.WebPageConfig',
     'tweets',
+    #  third-party
+    'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -189,7 +192,7 @@ STATICFILES_DIRS=[
 ]
 
 LOGIN_REDIRECT_URL='/items/list'
-
+LOGIN_URL='/tweets/login'
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 SOCIAL_AUTH_FACEBOOK_KEY = os.environ.get('SOCIAL_AUTH_FACEBOOK_KEY')        # App ID
@@ -198,3 +201,17 @@ SOCIAL_AUTH_FACEBOOK_SECRET = os.environ.get('SOCIAL_AUTH_FACEBOOK_SECRET ') # A
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 APPEND_SLASH=False
+
+DEFAULT_RENDERER_CLASSES=[
+        'rest_framework.renderers.JSONRenderer',
+]
+if DEBUG:
+    DEFAULT_RENDERER_CLASSES += [
+        'rest_framework.renderers.BrowsableAPIRenderer'
+    ]
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication'
+    ],
+    'DEFAULT_RENDERER_CLASSES': DEFAULT_RENDERER_CLASSES
+}

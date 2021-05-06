@@ -9,13 +9,15 @@
             <h2>Welcome to Tweetme2</h2>
         </div>
     </div>
-
     <div class="row mb-3">
         <div class="col-md-4 mx-auto col-10">
             <form class="form" id="tweet-create-form" method="POST" action="/tweets/create-tweet/">
                 {% csrf_token %}
+                <div class="d-none alert alert-danger" id="tweet-create-form-error">
+
+                </div>
                 <input type="hidden" value='/tweets/' name='next' />
-                <textarea class="form-control" name="content" placeholder="Write your tweet here..."></textarea>
+                <textarea class="form-control" required name="content" placeholder="Write your tweet here..."></textarea>
                 <button class="btn btn-primary" type="submit">Submit tweet</button>
             </form>
         </div>
@@ -25,36 +27,98 @@
         Loading..
     </div>
 
+
     <script>
+    function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+    function handleTweetFormError(msg,display){
+        var myErrorDiv=document.getElementById("tweet-create-form-error")
+        if (display=== true ){
+            //show error
+            myErrorDiv.setAttribute("class","d-block alert alert-danger")
+            myErrorDiv.innerText=msg
+        }else{
+            // hide error
+            myErrorDiv.setAttribute("class","d-none alert alert-danger")
+        }
+    }
 
     function handleTweetCreateFormDidSubmit(event){
         event.preventDefault()
         const myForm=event.target
         const myFormData= new FormData(myForm)
+        //for (var i of myFormData.entries()){
+          //  console.log(i)
+        //}
         const url=myForm.getAttribute("action")
         const method=myForm.getAttribute("method")
-        console.log(url,method)
+        //console.log(url,method)
         const xhr=new XMLHttpRequest()
+        const responseType="json"
+        xhr.responseType=responseType
         xhr.open(method,url)
         xhr.setRequestHeader("HTTP_X_REQUESTED_WITH", "XMLHttpRequest")
         xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest")
         xhr.onload=function () {
-            const serverResponse=xhr.response
-            console.log(xhr.status,serverResponse)
-            const tweetsEl=document.getElementById("tweets")
-            loadTweets(tweetsEl)
+            if (xhr.status===201){
+                handleTweetFormError("",false)
+                const newTweetJson=xhr.response
+                //const newTweetJson=JSON.parse(newTweet)
+                const newTweetElement=formatTweetElement(newTweetJson)
+                const oldTweetsHtml=tweetContainerElement.innerHTML
+                tweetContainerElement.innerHTML=newTweetElement+oldTweetsHtml
+                myForm.reset()
+            }else if (xhr.status===400){
+                const errorJson=xhr.response
+                const contentError=errorJson.content
+                let contentErrorMsg
+                if (contentError){
+                    contentErrorMsg=contentError[0]
+                    if (contentError){
+                        handleTweetFormError(contentErrorMsg,true)
+                    }else{
+                        alert("An error occurred.Please try again")
+                    }
+
+                }else{
+                    alert("An error occurred.Please try again")
+                }
+                }else if (xhr.status===401){
+                alert("Please, you must login")
+                window.location.href="/tweets/login"
+                }else if (xhr.status===403){
+                alert("Please, you must login")
+                window.location.href="/tweets/login"
+            }else if (xhr.status===500){
+                alert("There was a server error please try again")
+            }
 
         }
-        //for (var myItem of myFormData.entries()){
-          //  console.log(myItem)
-        //}
+        xhr.onerror=function (){
+                alert("An error occurred. Please try again later.")
+            }
         xhr.send(myFormData)
     }
 
     const tweetCreateFormEl=document.getElementById("tweet-create-form")
     tweetCreateFormEl.addEventListener("submit",handleTweetCreateFormDidSubmit)
 
-    const tweetsEl=document.getElementById("tweets")
+    const tweetContainerElement=document.getElementById("tweets")
+
     function loadTweets(tweetsElement){
         const xhr=new XMLHttpRequest()//xhr=SomeClass()
         const method='GET' //'POST'
@@ -65,33 +129,60 @@
         xhr.onload=function(){
 
             const serverResponse=xhr.response
-            const listedItems=serverResponse.response //array in JavaScript
+            const listedItems=serverResponse
             var finalTweetStr=""
             var i;
             for (i=0;i<listedItems.length;i++){
                 var tweetObj=listedItems[i]
                 var currentItem=formatTweetElement(tweetObj)
                 finalTweetStr+=currentItem
-        }
+        }//array in JavaScript
         tweetsElement.innerHTML=finalTweetStr
         //console.log(listedItems)
 
     }
     xhr.send()
     }
-    loadTweets(tweetsEl)
+    loadTweets(tweetContainerElement)
 
-    function handleDidLike(tweet_id,currentCount){
+    function handleTweetActionBtn(tweet_id,currentCount,action){
         console.log(tweet_id,currentCount)
+        const url="/tweets/api/tweets/action"
+        const method="POST"
+        const data=JSON.stringify({
+            id:tweet_id,
+            action:action
+        })
+        const xhr=new XMLHttpRequest()
+        const csrftoken = getCookie('csrftoken');
+        xhr.open(method,url)
+        xhr.setRequestHeader("Content-Type","application/json")
+        xhr.setRequestHeader("HTTP_X_REQUESTED_WITH", "XMLHttpRequest")
+        xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest")
+        xhr.setRequestHeader("X-CSRFToken",csrftoken)
+        xhr.onload=function (){
+            //react.js this handle the state much better
+            loadTweets(tweetContainerElement)
+            console.log(xhr.status,xhr.response)
+        }
+        xhr.send(data)
+        return
     }
-
+    function ReTweetBtn(tweet){
+        return "<button class='btn btn-outline-success' onclick=handleTweetActionBtn(" + tweet.id+"," +tweet.likes+",'retweet')>ReTweet</button>"
+    }
+    function UnLikeBtn(tweet){
+        return "<button class='btn btn-outline-primary' onclick=handleTweetActionBtn(" + tweet.id+"," +tweet.likes+",'unlike')>UnLike</button>"
+    }
     function LikeBtn(tweet){
-        return "<button class='btn btn-primary' onclick=handleDidLike(" + tweet.id+"," +tweet.likes+")>"+tweet.likes+" Like</button>"
+        return "<button class='btn btn-primary' onclick=handleTweetActionBtn(" + tweet.id+"," +tweet.likes+",'like')>"+tweet.likes+" Like</button>"
     }
     function formatTweetElement(tweet){
         var formatedTweet="<div class='col-12 col-md-10 mx-auto border-top border-bottom rounded py-3 mb-4 tweet' id='tweet-"+tweet.id+"'><p>"
             +tweet.content+"</p><div class='btn-group'>"+
             LikeBtn(tweet)+
+            UnLikeBtn(tweet)+
+            ReTweetBtn(tweet)+
             "</div></div>"
         return formatedTweet
     }
